@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>UjianKu — Kuis Online</title>
+
+<!-- Tailwind via CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          display: ['"Sora"', 'sans-serif'],
+          body: ['"Inter"', 'sans-serif'],
+        },
+        colors: {
+          ink: '#1B1730',
+          paper: '#FAF9F6',
+          plum: '#5B3A8E',
+          plumdark: '#3D2764',
+          coral: '#F2683C',
+          mint: '#1FA97C',
+        }
+      }
+    }
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Firebase (compat SDK, no build tools needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-paper text-ink font-body min-h-screen flex flex-col">
+
+<!-- ===== TOP BAR ===== -->
+<header class="sticky top-0 z-30 bg-plum text-white shadow-md">
+  <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">📘</span>
+      <span class="font-display font-800 text-lg tracking-tight">UjianKu</span>
+    </div>
+    <div id="userBox" class="hidden items-center gap-3 text-sm">
+      <span id="userName" class="hidden sm:inline opacity-90"></span>
+      <button id="btnLogout" class="bg-white/15 hover:bg-white/25 transition px-3 py-1.5 rounded-full font-medium">Keluar</button>
+    </div>
+  </div>
+</header>
+
+<main class="flex-1 w-full max-w-3xl mx-auto px-4 py-6">
+
+  <!-- ===== TOAST / BANNER ===== -->
+  <div id="banner" class="hidden mb-4 rounded-xl px-4 py-3 text-sm font-medium"></div>
+
+  <!-- ===== AUTH VIEW ===== -->
+  <section id="view-auth" class="hidden">
+    <div class="max-w-sm mx-auto mt-6">
+      <h1 class="font-display font-800 text-2xl text-plumdark text-center mb-1">Selamat Datang 👋</h1>
+      <p class="text-center text-sm text-ink/60 mb-6">Masuk atau daftar untuk mulai mengerjakan kuis</p>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-plum/10 p-5">
+        <div class="flex mb-5 rounded-full bg-plum/5 p-1 text-sm font-semibold">
+          <button id="tabLogin" class="flex-1 py-2 rounded-full bg-plum text-white transition">Masuk</button>
+          <button id="tabRegister" class="flex-1 py-2 rounded-full text-plumdark transition">Daftar</button>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <form id="formLogin" class="space-y-3">
+          <input id="loginEmail" type="email" required placeholder="Email" autocomplete="username"
+            class="w-full border border-ink/15 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-plum">
+          <input id="loginPassword" type="password" required placeholder="Kata sandi" autocomplete="current-password"
+            class="w-full border border-ink/15 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-plum">
+          <button type="submit" class="w-full bg-coral hover:brightness-105 text-white font-semibold py-2.5 rounded-xl transition">Masuk</button>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form id="formRegister" class="space-y-3 hidden">
+          <input id="regName" type="text" required placeholder="Nama lengkap"
+            class="w-full border border-ink/15 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-plum">
+          <input id="regEmail" type="email" required placeholder="Email" autocomplete="username"
+            class="w-full border border-ink/15 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-plum">
+          <input id="regPassword" type="password" required minlength="6" placeholder="Kata sandi (min. 6 karakter)" autocomplete="new-password"
+            class="w-full border border-ink/15 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-plum">
+          <button type="submit" class="w-full bg-plum hover:brightness-105 text-white font-semibold py-2.5 rounded-xl transition">Daftar</button>
+        </form>
+
+        <p id="authError" class="hidden text-coral text-sm mt-3 text-center"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DASHBOARD VIEW ===== -->
+  <section id="view-dashboard" class="hidden">
+    <h1 class="font-display font-800 text-xl text-plumdark mb-1">Daftar Kuis</h1>
+    <p class="text-sm text-ink/60 mb-5">Pilih kuis di bawah ini untuk mulai mengerjakan.</p>
+    <div id="quizList" class="grid gap-3"></div>
+    <div id="quizEmpty" class="hidden text-center text-sm text-ink/50 py-10">Belum ada kuis tersedia. Coba lagi nanti.</div>
+  </section>
+
+  <!-- ===== QUIZ ROOM VIEW ===== -->
+  <section id="view-quiz" class="hidden select-none">
+    <div class="flex items-center justify-between sticky top-16 z-20 bg-paper/95 backdrop-blur py-2 -mx-4 px-4 border-b border-ink/10">
+      <div>
+        <h2 id="quizTitle" class="font-display font-700 text-lg text-plumdark leading-tight"></h2>
+        <p id="quizProgress" class="text-xs text-ink/50"></p>
+      </div>
+      <div id="timerBox" class="font-display font-800 text-lg bg-plum text-white rounded-xl px-3 py-1.5 tabular-nums">--:--</div>
+    </div>
+
+    <div id="antiCheatWarning" class="hidden mt-3 bg-coral/10 border border-coral/40 text-coral text-sm rounded-xl px-3 py-2">
+      ⚠️ Terdeteksi berpindah tab/aplikasi. Aktivitas ini dicatat.
+    </div>
+
+    <div id="questionList" class="mt-4 space-y-4 pb-24"></div>
+
+    <div class="fixed bottom-0 left-0 right-0 bg-paper border-t border-ink/10 p-3 z-30">
+      <div class="max-w-3xl mx-auto">
+        <button id="btnSubmitQuiz" class="w-full bg-mint hover:brightness-105 text-white font-semibold py-3 rounded-xl transition">Kumpulkan Jawaban</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== RESULT VIEW ===== -->
+  <section id="view-result" class="hidden">
+    <div class="bg-white border border-plum/10 rounded-2xl p-6 text-center shadow-sm">
+      <p class="text-sm text-ink/60 mb-1">Hasil Kuis</p>
+      <h2 id="resultQuizTitle" class="font-display font-700 text-lg text-plumdark mb-4"></h2>
+      <div class="font-display font-800 text-5xl text-coral mb-2" id="resultScore">0</div>
+      <p id="resultDetail" class="text-sm text-ink/60"></p>
+    </div>
+
+    <div id="resultReview" class="mt-5 space-y-3"></div>
+
+    <button id="btnBackDashboard" class="w-full mt-6 bg-plum hover:brightness-105 text-white font-semibold py-3 rounded-xl transition">Kembali ke Dashboard</button>
+  </section>
+
+</main>
+
+<footer class="text-center text-xs text-ink/40 py-4">Dibuat dengan Firebase + Tailwind</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

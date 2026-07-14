@@ -1,0 +1,65 @@
+/* Sedikit gaya tambahan di luar utility Tailwind */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Cegah seleksi teks & copy paling dasar di area soal (bukan proteksi mutlak) */
+#questionList, #view-quiz {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+
+/* Kartu soal */
+.question-card {
+  background: #fff;
+  border: 1px solid rgba(27, 23, 48, 0.08);
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.option-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(27, 23, 48, 0.12);
+  cursor: pointer;
+  transition: border-color .15s ease, background-color .15s ease;
+  font-size: 0.925rem;
+}
+
+.option-label:active {
+  background-color: rgba(91, 58, 142, 0.06);
+}
+
+.option-label.selected {
+  border-color: #5B3A8E;
+  background-color: rgba(91, 58, 142, 0.08);
+  font-weight: 600;
+}
+
+/* Timer dalam keadaan mendesak (< 1 menit) */
+.timer-urgent {
+  background-color: #F2683C !important;
+  animation: pulse-timer 1s infinite;
+}
+
+@keyframes pulse-timer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Review hasil */
+.review-correct { border-left: 4px solid #1FA97C; }
+.review-wrong { border-left: 4px solid #F2683C; }
+
+@media (prefers-reduced-motion: reduce) {
+  .timer-urgent { animation: none; }
+}
